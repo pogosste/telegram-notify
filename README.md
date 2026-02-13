@@ -9,15 +9,15 @@
 
 ### Установка одной командой:
 
-\`\`\`bash
+```bash
 curl -fsSL https://raw.githubusercontent.com/pogosste/telegram-notify/main/quick-install.sh | sudo bash
-\`\`\`
+```
 
 После установки используйте команду:
 
-\`\`\`bash
+```bash
 telegram-notify
-\`\`\`
+```
 
 ## 📋 Возможности
 
@@ -33,18 +33,18 @@ telegram-notify
 
 ### Основные команды:
 
-\`\`\`bash
+```bash
 telegram-notify              # Открыть интерактивное меню
 telegram-notify test         # Отправить тестовые уведомления
 telegram-notify status       # Показать статус системы
 telegram-notify logs         # Просмотр логов
 telegram-notify logs -f      # Живой просмотр логов
 telegram-notify help         # Показать справку
-\`\`\`
+```
 
 ### Интерактивное меню:
 
-\`\`\`
+```
 ╔══════════════════��═════════════════════════════════════╗
 ║     🔐 SECURITY NOTIFICATION SYSTEM              ║
 ║        Management Menu v2.1                         ║
@@ -57,14 +57,14 @@ telegram-notify help         # Показать справку
 5. 📊 Просмотр логов
 6. ℹ️  Информация
 0. 🚪 Выход
-\`\`\`
+```
 
 ## 📖 Получение учетных данных Telegram
 
 ### Bot Token
 
 1. Найдите [@BotFather](https://t.me/BotFather) в Telegram
-2. Отправьте \`/newbot\`
+2. Отправьте `/newbot`
 3. Следуйте инструкциям
 4. Скопируйте токен
 
@@ -74,48 +74,48 @@ telegram-notify help         # Показать справку
 2. Добавьте вашего бота в группу как администратора
 3. Найдите [@userinfobot](https://t.me/userinfobot)
 4. Перешлите любое сообщение из группы боту
-5. Скопируйте ID (начинается с \`-100\`)
+5. Скопируйте ID (начинается с `-100`)
 
 ### Topic ID (опционально)
 
 1. Включите топики в настройках группы
 2. Создайте топик (например, "Security Alerts")
 3. Перешлите сообщение из топика [@userinfobot](https://t.me/userinfobot)
-4. Скопируйте \`message_thread_id\`
+4. Скопируйте `message_thread_id`
 
 ## 📦 Альтернативные методы установки
 
 ### Из исходников:
 
-\`\`\`bash
+```bash
 git clone https://github.com/pogosste/telegram-notify.git
 cd telegram-notify
 sudo bash install.sh
-\`\`\`
+```
 
 ### Wget:
 
-\`\`\`bash
+```bash
 wget -qO- https://raw.githubusercontent.com/pogosste/telegram-notify/main/quick-install.sh | sudo bash
-\`\`\`
+```
 
 ## 🗑️ Удаление
 
-\`\`\`bash
+```bash
 telegram-notify uninstall
-\`\`\`
+```
 
 или
 
-\`\`\`bash
+```bash
 sudo bash uninstall.sh
-\`\`\`
+```
 
 ## 🔧 Конфигурация
 
-Файл конфигурации: \`/etc/security-notify/config.conf\`
+Файл конфигурации: `/etc/security-notify/config.conf`
 
-\`\`\`bash
+```bash
 TELEGRAM_BOT_TOKEN="your_token"
 CHAT_ID="your_chat_id"
 TOPIC_ID="your_topic_id"
@@ -123,25 +123,25 @@ ENABLE_SSH_SUCCESS=true
 ENABLE_SSH_FAIL=true
 ENABLE_GEO_LOOKUP=true
 WHITELIST_IPS="192.168.1.100,10.0.0.50"
-\`\`\`
+```
 
 Редактировать:
 
-\`\`\`bash
+```bash
 sudo nano /etc/security-notify/config.conf
-\`\`\`
+```
 
 или через меню:
 
-\`\`\`bash
+```bash
 telegram-notify
-\`\`\`
+```
 
 ## 📊 Примеры уведомлений
 
 ### SSH Login
 
-\`\`\`
+```
 ✅ SSH LOGIN SUCCESS
 ━━━━━━━━━━━━━━━━━━━━
 👤 User: admin
@@ -151,11 +151,11 @@ telegram-notify
 🖥 Server: web-server-1
 🕐 Time: 2026-02-13 14:30:15
 ━━━━━━━━━━━━━━━━━━━━
-\`\`\`
+```
 
 ### New IP Warning
 
-\`\`\`
+```
 ⚠️ NEW IP ADDRESS ⚠️
 ━━━━━━━━━━━━━━━━━━━━
 👤 User: admin
@@ -165,11 +165,11 @@ telegram-notify
 🖥 Server: web-server-1
 🕐 Time: 2026-02-13 14:35:20
 ━━━━━━━━━━━━━━━━━━━━
-\`\`\`
+```
 
 ### Fail2Ban Alert
 
-\`\`\`
+```
 🚨 FAIL2BAN ALERT 🚨
 ━━━━━━━━━━━━━━━━━━━━
 🔐 Jail: SSH
@@ -181,7 +181,7 @@ telegram-notify
 🕐 Time: 2026-02-13 14:40:10
 ━━━━━━━━━━━━━━━━━━━━
 ⚠️ IP HAS BEEN BANNED ⚠️
-\`\`\`
+```
 
 ## 🛠️ Требования
 
@@ -194,27 +194,27 @@ telegram-notify
 
 ### Команда не найдена
 
-\`\`\`bash
+```bash
 which telegram-notify
 # Если не найдена, переустановите:
 curl -fsSL https://raw.githubusercontent.com/pogosste/telegram-notify/main/quick-install.sh | sudo bash
-\`\`\`
+```
 
 ### Уведомления не приходят
 
-\`\`\`bash
+```bash
 telegram-notify status
 telegram-notify test
 tail -f /var/log/security-notify.log
-\`\`\`
+```
 
 ### Fail2Ban не работает
 
-\`\`\`bash
+```bash
 sudo systemctl status fail2ban
 sudo fail2ban-client status sshd
 sudo journalctl -u fail2ban -n 50
-\`\`\`
+```
 
 ## 📝 Документация
 
@@ -225,9 +225,9 @@ sudo journalctl -u fail2ban -n 50
 Contributions are welcome! 
 
 1. Fork the repository
-2. Create your feature branch (\`git checkout -b feature/AmazingFeature\`)
-3. Commit your changes (\`git commit -m 'Add some AmazingFeature'\`)
-4. Push to the branch (\`git push origin feature/AmazingFeature\`)
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
 ## 📄 Лицензия
