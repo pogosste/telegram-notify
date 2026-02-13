@@ -14,6 +14,32 @@ print_warning() { [ "$SILENT_MODE" = false ] && echo -e "${YELLOW}⚠ $1${NC}"; 
 print_info() { [ "$SILENT_MODE" = false ] && echo -e "${BLUE}ℹ $1${NC}"; }
 print_header() { [ "$SILENT_MODE" = false ] && echo -e "\n${BLUE}==========================================${NC}\n${BLUE}$1${NC}\n${BLUE}==========================================${NC}"; }
 
+get_ssh_port() {
+    local ssh_port=""
+    
+    # Method 1: From sshd_config
+    if [ -f /etc/ssh/sshd_config ]; then
+        ssh_port=$(grep "^Port " /etc/ssh/sshd_config | awk '{print $2}')
+    fi
+    
+    # Method 2: From running process (ss)
+    if [ -z "$ssh_port" ]; then
+        ssh_port=$(ss -tlnp 2>/dev/null | grep sshd | grep -oP ':\K[0-9]+' | head -1)
+    fi
+    
+    # Method 3: From running process (netstat)
+    if [ -z "$ssh_port" ]; then
+        ssh_port=$(netstat -tlnp 2>/dev/null | grep sshd | grep -oP ':\K[0-9]+' | head -1)
+    fi
+    
+    # Default to 22
+    if [ -z "$ssh_port" ]; then
+        ssh_port=22
+    fi
+    
+    echo "$ssh_port"
+}
+
 # Parse command-line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -427,6 +453,10 @@ if [ "$ENABLE_F2B" = "true" ]; then
     fi
     
     if [ "$ENABLE_F2B" = "true" ]; then
+        # Detect SSH port
+        SSH_PORT=$(get_ssh_port)
+        print_info "Detected SSH port: $SSH_PORT"
+        
         cat > /etc/fail2ban/action.d/telegram-notify.conf << 'EOFACT'
 [Definition]
 actionstart =
@@ -440,7 +470,8 @@ EOFACT
         print_success "Fail2Ban action created"
         
         if [ ! -f /etc/fail2ban/jail.local ]; then
-            cat > /etc/fail2ban/jail.local << 'EOFJAIL'
+            # Create new jail.local with detected SSH port
+            cat > /etc/fail2ban/jail.local << EOFJAIL
 [DEFAULT]
 bantime = 3600
 findtime = 600
@@ -449,17 +480,46 @@ backend = systemd
 
 [sshd]
 enabled = true
-port = ssh
+port = $SSH_PORT
 filter = sshd
 logpath = /var/log/auth.log
 maxretry = 3
-action = iptables-multiport[name=SSH, port=ssh, protocol=tcp]
+action = iptables-multiport[name=SSH, port=$SSH_PORT, protocol=tcp]
          telegram-notify[name=SSH]
 EOFJAIL
-            print_success "Fail2Ban jail.local created"
+            print_success "Fail2Ban jail.local created (port: $SSH_PORT)"
         else
-            print_warning "jail.local exists, please add manually:"
-            print_info "  action = telegram-notify[name=SSH]"
+            # Update existing jail.local
+            if grep -q '^\[sshd\]' /etc/fail2ban/jail.local; then
+                # Update port in existing [sshd] section
+                sed -i "/^\[sshd\]/,/^\[/ s/^port = .*/port = $SSH_PORT/" /etc/fail2ban/jail.local
+                
+                # Update port in action line if it exists
+                sed -i "/^\[sshd\]/,/^\[/ s/port=ssh/port=$SSH_PORT/g" /etc/fail2ban/jail.local
+                sed -i "/^\[sshd\]/,/^\[/ s/port=[0-9]\+/port=$SSH_PORT/g" /etc/fail2ban/jail.local
+                
+                # Add telegram-notify action if not present
+                if ! grep -A 10 '^\[sshd\]' /etc/fail2ban/jail.local | grep -q 'telegram-notify'; then
+                    # Find the action line and add telegram-notify
+                    sed -i "/^\[sshd\]/,/^\[/ s|\(action = .*\)|\1\n         telegram-notify[name=SSH]|" /etc/fail2ban/jail.local
+                fi
+                
+                print_success "Updated [sshd] section (port: $SSH_PORT)"
+            else
+                # Add [sshd] section if it doesn't exist
+                cat >> /etc/fail2ban/jail.local << EOFJAIL
+
+[sshd]
+enabled = true
+port = $SSH_PORT
+filter = sshd
+logpath = /var/log/auth.log
+maxretry = 3
+action = iptables-multiport[name=SSH, port=$SSH_PORT, protocol=tcp]
+         telegram-notify[name=SSH]
+EOFJAIL
+                print_success "Added [sshd] section (port: $SSH_PORT)"
+            fi
         fi
         
         systemctl enable fail2ban 2>/dev/null
@@ -470,7 +530,7 @@ EOFJAIL
             print_success "Fail2Ban is running"
             
             if fail2ban-client status sshd &>/dev/null; then
-                print_success "SSH jail is active"
+                print_success "SSH jail is active (monitoring port $SSH_PORT)"
             else
                 print_warning "SSH jail may not be active"
             fi
