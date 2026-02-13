@@ -37,6 +37,11 @@ get_ssh_port() {
         ssh_port=22
     fi
     
+    # Validate port is numeric and in valid range
+    if ! [[ "$ssh_port" =~ ^[0-9]+$ ]] || [ "$ssh_port" -lt 1 ] || [ "$ssh_port" -gt 65535 ]; then
+        ssh_port=22
+    fi
+    
     echo "$ssh_port"
 }
 
@@ -491,9 +496,9 @@ EOFJAIL
         else
             # Update existing jail.local
             if grep -q '^\[sshd\]' /etc/fail2ban/jail.local; then
-                # Check if telegram-notify already exists in [sshd] section
+                # Check if telegram-notify already exists in [sshd] section (read entire section)
                 NEEDS_TELEGRAM_NOTIFY=0
-                if ! grep -A 20 '^\[sshd\]' /etc/fail2ban/jail.local | grep -q 'telegram-notify'; then
+                if ! awk 'BEGIN{in_sshd=0} /^\[sshd\]/{in_sshd=1} /^\[/ && !/^\[sshd\]/{in_sshd=0} in_sshd{print}' /etc/fail2ban/jail.local | grep -q 'telegram-notify'; then
                     NEEDS_TELEGRAM_NOTIFY=1
                 fi
                 
@@ -513,7 +518,7 @@ EOFJAIL
                     gsub(/port=[0-9]+/, "port=" port)
                     print
                     # Add telegram-notify after action if needed and not yet added
-                    if (needs_telegram == "1" && action_found == 0) {
+                    if (needs_telegram == 1 && action_found == 0) {
                         print "         telegram-notify[name=SSH]"
                         action_found = 1
                     }
