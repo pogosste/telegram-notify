@@ -6,11 +6,40 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-print_success() { echo -e "${GREEN}✓ $1${NC}"; }
+SILENT_MODE=false
+
+print_success() { [ "$SILENT_MODE" = false ] && echo -e "${GREEN}✓ $1${NC}"; }
 print_error() { echo -e "${RED}✗ $1${NC}"; }
-print_warning() { echo -e "${YELLOW}⚠ $1${NC}"; }
-print_info() { echo -e "${BLUE}ℹ $1${NC}"; }
-print_header() { echo -e "\n${BLUE}==========================================${NC}\n${BLUE}$1${NC}\n${BLUE}==========================================${NC}"; }
+print_warning() { [ "$SILENT_MODE" = false ] && echo -e "${YELLOW}⚠ $1${NC}"; }
+print_info() { [ "$SILENT_MODE" = false ] && echo -e "${BLUE}ℹ $1${NC}"; }
+print_header() { [ "$SILENT_MODE" = false ] && echo -e "\n${BLUE}==========================================${NC}\n${BLUE}$1${NC}\n${BLUE}==========================================${NC}"; }
+
+# Parse command-line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --token)
+            TELEGRAM_BOT_TOKEN="$2"
+            shift 2
+            ;;
+        --chat-id)
+            CHAT_ID="$2"
+            shift 2
+            ;;
+        --topic-id)
+            TOPIC_ID="$2"
+            shift 2
+            ;;
+        --silent)
+            SILENT_MODE=true
+            shift
+            ;;
+        *)
+            print_error "Unknown option: $1"
+            echo "Usage: $0 [--token TOKEN] [--chat-id ID] [--topic-id ID] [--silent]"
+            exit 1
+            ;;
+    esac
+done
 
 if [ "$EUID" -ne 0 ]; then 
     print_error "Please run as root: sudo $0"
@@ -22,34 +51,44 @@ print_header "Security Notification System - Installation v2.1"
 # Проверка старой установки
 if [ -d /etc/security-notify ] || [ -f /usr/local/bin/ssh-login-notify ]; then
     print_warning "Previous installation detected!"
-    echo ""
-    echo "Please uninstall first:"
-    echo "  sudo bash ~/uninstall-security-notify.sh"
-    echo ""
-    read -p "Force reinstall? (yes/no): " FORCE
-    if [[ ! "$FORCE" =~ ^[Yy]es$ ]]; then
-        exit 1
+    # In non-interactive mode (when credentials are provided), auto-confirm reinstall
+    if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$CHAT_ID" ]; then
+        print_info "Cleaning previous installation (non-interactive mode)..."
+        rm -rf /etc/security-notify /usr/local/lib/security-notify
+        rm -f /usr/local/bin/ssh-login-notify /usr/local/bin/fail2ban-notify /usr/local/bin/test-security-notify
+    else
+        echo ""
+        echo "Please uninstall first:"
+        echo "  sudo bash ~/uninstall-security-notify.sh"
+        echo ""
+        read -p "Force reinstall? (yes/no): " FORCE
+        if [[ ! "$FORCE" =~ ^[Yy]es$ ]]; then
+            exit 1
+        fi
+        print_info "Cleaning previous installation..."
+        rm -rf /etc/security-notify /usr/local/lib/security-notify
+        rm -f /usr/local/bin/ssh-login-notify /usr/local/bin/fail2ban-notify /usr/local/bin/test-security-notify
     fi
-    print_info "Cleaning previous installation..."
-    rm -rf /etc/security-notify /usr/local/lib/security-notify
-    rm -f /usr/local/bin/ssh-login-notify /usr/local/bin/fail2ban-notify /usr/local/bin/test-security-notify
 fi
 
 # Поиск бэкапов
 BACKUP_CONF=$(find /tmp -name "security-notify-backup-*" -type d 2>/dev/null | tail -1)
 if [ -n "$BACKUP_CONF" ] && [ -f "$BACKUP_CONF/config.conf" ]; then
     print_info "Found backup configuration"
-    source "$BACKUP_CONF/config.conf"
-    echo ""
-    print_success "Loaded credentials from backup"
-    echo ""
-    read -p "Use these credentials? (yes/no) [yes]: " USE_BACKUP
-    USE_BACKUP=${USE_BACKUP:-yes}
-    
-    if [[ ! "$USE_BACKUP" =~ ^[Yy] ]]; then
-        TELEGRAM_BOT_TOKEN=""
-        CHAT_ID=""
-        TOPIC_ID=""
+    # Only use backup if credentials weren't provided via arguments
+    if [ -z "$TELEGRAM_BOT_TOKEN" ] && [ -z "$CHAT_ID" ]; then
+        source "$BACKUP_CONF/config.conf"
+        echo ""
+        print_success "Loaded credentials from backup"
+        echo ""
+        read -p "Use these credentials? (yes/no) [yes]: " USE_BACKUP
+        USE_BACKUP=${USE_BACKUP:-yes}
+        
+        if [[ ! "$USE_BACKUP" =~ ^[Yy] ]]; then
+            TELEGRAM_BOT_TOKEN=""
+            CHAT_ID=""
+            TOPIC_ID=""
+        fi
     fi
 fi
 
@@ -64,6 +103,8 @@ if [ -z "$TELEGRAM_BOT_TOKEN" ]; then
         print_error "Bot token is required!"
         exit 1
     fi
+else
+    print_info "Using provided bot token"
 fi
 
 if [ -z "$CHAT_ID" ]; then
@@ -73,26 +114,42 @@ if [ -z "$CHAT_ID" ]; then
         print_error "Chat ID is required!"
         exit 1
     fi
+else
+    print_info "Using provided chat ID"
 fi
 
 if [ -z "$TOPIC_ID" ]; then
-    read -p "Enter Topic ID (press Enter to skip): " TOPIC_ID
+    # Only prompt if not in non-interactive mode
+    if [ "$SILENT_MODE" = false ]; then
+        read -p "Enter Topic ID (press Enter to skip): " TOPIC_ID
+    fi
+else
+    print_info "Using provided topic ID"
 fi
 
-read -p "Enter server name [$(hostname)]: " SERVER_NAME
-SERVER_NAME=${SERVER_NAME:-$(hostname)}
+# Skip interactive prompts for other settings when in silent mode
+if [ "$SILENT_MODE" = false ]; then
+    read -p "Enter server name [$(hostname)]: " SERVER_NAME
+    SERVER_NAME=${SERVER_NAME:-$(hostname)}
 
-read -p "Enable SSH login notifications? [yes]: " ENABLE_SSH
-ENABLE_SSH=${ENABLE_SSH:-yes}
-[[ "$ENABLE_SSH" =~ ^[Yy] ]] && ENABLE_SSH="true" || ENABLE_SSH="false"
+    read -p "Enable SSH login notifications? [yes]: " ENABLE_SSH
+    ENABLE_SSH=${ENABLE_SSH:-yes}
+    [[ "$ENABLE_SSH" =~ ^[Yy] ]] && ENABLE_SSH="true" || ENABLE_SSH="false"
 
-read -p "Enable Fail2Ban notifications? [yes]: " ENABLE_F2B
-ENABLE_F2B=${ENABLE_F2B:-yes}
-[[ "$ENABLE_F2B" =~ ^[Yy] ]] && ENABLE_F2B="true" || ENABLE_F2B="false"
+    read -p "Enable Fail2Ban notifications? [yes]: " ENABLE_F2B
+    ENABLE_F2B=${ENABLE_F2B:-yes}
+    [[ "$ENABLE_F2B" =~ ^[Yy] ]] && ENABLE_F2B="true" || ENABLE_F2B="false"
 
-read -p "Enable geo-location lookup? [yes]: " ENABLE_GEO
-ENABLE_GEO=${ENABLE_GEO:-yes}
-[[ "$ENABLE_GEO" =~ ^[Yy] ]] && ENABLE_GEO="true" || ENABLE_GEO="false"
+    read -p "Enable geo-location lookup? [yes]: " ENABLE_GEO
+    ENABLE_GEO=${ENABLE_GEO:-yes}
+    [[ "$ENABLE_GEO" =~ ^[Yy] ]] && ENABLE_GEO="true" || ENABLE_GEO="false"
+else
+    # Use defaults in silent mode
+    SERVER_NAME=${SERVER_NAME:-$(hostname)}
+    ENABLE_SSH=${ENABLE_SSH:-true}
+    ENABLE_F2B=${ENABLE_F2B:-true}
+    ENABLE_GEO=${ENABLE_GEO:-true}
+fi
 
 # Создание директорий
 print_header "Step 2: Creating directories"

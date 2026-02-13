@@ -53,7 +53,7 @@ print_success "Files downloaded"
 # Запускаем установку
 print_info "Starting installation..."
 echo ""
-bash install.sh
+bash install.sh "$@"
 
 # Проверяем успешность установки
 if [ -f /etc/security-notify/config.conf ]; then
