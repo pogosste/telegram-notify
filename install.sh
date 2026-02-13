@@ -34,7 +34,7 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         *)
-            echo "Unknown option: $1"
+            print_error "Unknown option: $1"
             echo "Usage: $0 [--token TOKEN] [--chat-id ID] [--topic-id ID] [--silent]"
             exit 1
             ;;
