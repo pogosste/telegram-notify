@@ -491,26 +491,44 @@ EOFJAIL
         else
             # Update existing jail.local
             if grep -q '^\[sshd\]' /etc/fail2ban/jail.local; then
+                # Check if telegram-notify already exists in [sshd] section
+                NEEDS_TELEGRAM_NOTIFY=0
+                if ! grep -A 20 '^\[sshd\]' /etc/fail2ban/jail.local | grep -q 'telegram-notify'; then
+                    NEEDS_TELEGRAM_NOTIFY=1
+                fi
+                
                 # Create a temporary file for updates
                 TEMP_JAIL=$(mktemp)
                 cp /etc/fail2ban/jail.local "$TEMP_JAIL"
                 
                 # Update port and action in [sshd] section only
-                awk -v port="$SSH_PORT" '
+                awk -v port="$SSH_PORT" -v needs_telegram="$NEEDS_TELEGRAM_NOTIFY" '
                 /^\[sshd\]/ { in_sshd=1 }
                 /^\[/ && !/^\[sshd\]/ { in_sshd=0 }
                 in_sshd && /^port[[:space:]]*=/ { print "port = " port; next }
-                in_sshd && /^[[:space:]]*action[[:space:]]*=/ {
+                in_sshd && /^action[[:space:]]*=/ {
                     # Update port in action line
                     gsub(/port=ssh/, "port=" port)
                     gsub(/port=[0-9]+/, "port=" port)
                     print
-                    # Add telegram-notify if not already present in file
-                    getline nextline
-                    if (nextline !~ /telegram-notify/) {
-                        print "         telegram-notify[name=SSH]"
+                    # Add telegram-notify if needed
+                    if (needs_telegram == "1") {
+                        # Check if next line exists
+                        if ((getline nextline) > 0) {
+                            if (nextline !~ /telegram-notify/) {
+                                print "         telegram-notify[name=SSH]"
+                            }
+                            print nextline
+                        } else {
+                            # Action line was last line - add telegram-notify
+                            print "         telegram-notify[name=SSH]"
+                        }
+                    } else {
+                        # Skip to next line if it exists
+                        if ((getline nextline) > 0) {
+                            print nextline
+                        }
                     }
-                    print nextline
                     next
                 }
                 { print }
