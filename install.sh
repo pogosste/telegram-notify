@@ -497,17 +497,17 @@ EOFJAIL
             # Update existing jail.local
             if grep -q '^\[sshd\]' /etc/fail2ban/jail.local; then
                 # Check if telegram-notify already exists in [sshd] section (read entire section)
-                NEEDS_TELEGRAM_NOTIFY=0
+                needs_telegram_notify=0
                 if ! awk 'BEGIN{in_sshd=0} /^\[sshd\]/{in_sshd=1} /^\[/ && !/^\[sshd\]/{in_sshd=0} in_sshd{print}' /etc/fail2ban/jail.local | grep -q 'telegram-notify'; then
-                    NEEDS_TELEGRAM_NOTIFY=1
+                    needs_telegram_notify=1
                 fi
                 
                 # Create a temporary file for updates
-                TEMP_JAIL=$(mktemp)
-                cp /etc/fail2ban/jail.local "$TEMP_JAIL"
+                temp_jail=$(mktemp)
+                cp /etc/fail2ban/jail.local "$temp_jail"
                 
                 # Update port and action in [sshd] section only
-                awk -v port="$SSH_PORT" -v needs_telegram="$NEEDS_TELEGRAM_NOTIFY" '
+                awk -v port="$SSH_PORT" -v needs_telegram="$needs_telegram_notify" '
                 BEGIN { in_sshd=0; action_found=0 }
                 /^\[sshd\]/ { in_sshd=1 }
                 /^\[/ && !/^\[sshd\]/ { in_sshd=0 }
@@ -525,9 +525,9 @@ EOFJAIL
                     next
                 }
                 { print }
-                ' "$TEMP_JAIL" > /etc/fail2ban/jail.local
+                ' "$temp_jail" > /etc/fail2ban/jail.local
                 
-                rm -f "$TEMP_JAIL"
+                rm -f "$temp_jail"
                 print_success "Updated [sshd] section (port: $SSH_PORT)"
             else
                 # Add [sshd] section if it doesn't exist
