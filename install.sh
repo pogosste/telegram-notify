@@ -491,19 +491,32 @@ EOFJAIL
         else
             # Update existing jail.local
             if grep -q '^\[sshd\]' /etc/fail2ban/jail.local; then
-                # Update port in existing [sshd] section
-                sed -i "/^\[sshd\]/,/^\[/ s/^port = .*/port = $SSH_PORT/" /etc/fail2ban/jail.local
+                # Create a temporary file for updates
+                TEMP_JAIL=$(mktemp)
+                cp /etc/fail2ban/jail.local "$TEMP_JAIL"
                 
-                # Update port in action line if it exists
-                sed -i "/^\[sshd\]/,/^\[/ s/port=ssh/port=$SSH_PORT/g" /etc/fail2ban/jail.local
-                sed -i "/^\[sshd\]/,/^\[/ s/port=[0-9]\+/port=$SSH_PORT/g" /etc/fail2ban/jail.local
+                # Update port and action in [sshd] section only
+                awk -v port="$SSH_PORT" '
+                /^\[sshd\]/ { in_sshd=1 }
+                /^\[/ && !/^\[sshd\]/ { in_sshd=0 }
+                in_sshd && /^port[[:space:]]*=/ { print "port = " port; next }
+                in_sshd && /^[[:space:]]*action[[:space:]]*=/ {
+                    # Update port in action line
+                    gsub(/port=ssh/, "port=" port)
+                    gsub(/port=[0-9]+/, "port=" port)
+                    print
+                    # Add telegram-notify if not already present in file
+                    getline nextline
+                    if (nextline !~ /telegram-notify/) {
+                        print "         telegram-notify[name=SSH]"
+                    }
+                    print nextline
+                    next
+                }
+                { print }
+                ' "$TEMP_JAIL" > /etc/fail2ban/jail.local
                 
-                # Add telegram-notify action if not present
-                if ! grep -A 10 '^\[sshd\]' /etc/fail2ban/jail.local | grep -q 'telegram-notify'; then
-                    # Find the action line and add telegram-notify
-                    sed -i "/^\[sshd\]/,/^\[/ s|\(action = .*\)|\1\n         telegram-notify[name=SSH]|" /etc/fail2ban/jail.local
-                fi
-                
+                rm -f "$TEMP_JAIL"
                 print_success "Updated [sshd] section (port: $SSH_PORT)"
             else
                 # Add [sshd] section if it doesn't exist
