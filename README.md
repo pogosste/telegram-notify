@@ -90,14 +90,14 @@ ENABLE_SSH_SUCCESS=true
 ENABLE_SSH_FAIL=true
 ENABLE_GEO_LOOKUP=true
 WHITELIST_IPS="192.168.1.100,10.0.0.50"
-Редакт��ровать:
+Редактировать:
 
 bash
 sudo nano /etc/security-notify/config.conf
 или через меню:
 
 bash
-telegram-notify  # → 3. Настройки
+telegram-notify
 📊 Примеры уведомлений
 SSH Login
 Code
@@ -132,7 +132,7 @@ Code
 ❌ Failed Attempts: 5
 🖥 Server: web-server-1
 🕐 Time: 2026-02-13 14:40:10
-━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━���━━━━━━━━━
 ⚠️ IP HAS BEEN BANNED ⚠️
 🛠️ Требования
 Ubuntu 20.04+ / Debian 10+
@@ -147,9 +147,9 @@ which telegram-notify
 curl -fsSL https://raw.githubusercontent.com/pogosste/telegram-notify/main/quick-install.sh | sudo bash
 Уведомления не приходят
 bash
-telegram-notify status    # Проверить конфигурацию
-telegram-notify test      # Отправить тестовое сообщение
-tail -f /var/log/security-notify.log  # Посмотреть логи
+telegram-notify status
+telegram-notify test
+tail -f /var/log/security-notify.log
 Fail2Ban не работает
 bash
 sudo systemctl status fail2ban
