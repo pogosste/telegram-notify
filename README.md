@@ -1,16 +1,16 @@
-# 🔐 Security Notification System
+# 🔐 Telegram Notify - Security Notification System
 
 Система уведомлений о событиях безопасности на VPS серверах через Telegram.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub release](https://img.shields.io/github/release/pogosste/security-notify-system.svg)](https://github.com/pogosste/security-notify-system/releases)
+[![GitHub release](https://img.shields.io/github/release/pogosste/telegram-notify.svg)](https://github.com/pogosste/telegram-notify/releases)
 
 ## 🚀 Быстрая установка
 
 ### Установка одной командой:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/pogosste/security-notify-system/main/quick-install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/pogosste/telegram-notify/main/quick-install.sh | sudo bash
 После установки используйте команду:
 
 bash
@@ -34,7 +34,7 @@ telegram-notify logs -f      # Живой просмотр логов
 telegram-notify help         # Показать справку
 Интерактивное меню:
 Code
-╔═══════════════════════════════════���════════════════════╗
+╔════════════════════════════════════════════════════════╗
 ║     🔐 SECURITY NOTIFICATION SYSTEM              ║
 ║        Management Menu v2.1                         ║
 ╚════════════════════════════════════════════════════════╝
@@ -66,12 +66,12 @@ Topic ID (опционально)
 📦 Альтернативные методы установки
 Из исходников:
 bash
-git clone https://github.com/pogosste/security-notify-system.git
-cd security-notify-system
+git clone https://github.com/pogosste/telegram-notify.git
+cd telegram-notify
 sudo bash install.sh
 Wget:
 bash
-wget -qO- https://raw.githubusercontent.com/pogosste/security-notify-system/main/quick-install.sh | sudo bash
+wget -qO- https://raw.githubusercontent.com/pogosste/telegram-notify/main/quick-install.sh | sudo bash
 🗑️ Удаление
 bash
 telegram-notify uninstall
@@ -90,7 +90,7 @@ ENABLE_SSH_SUCCESS=true
 ENABLE_SSH_FAIL=true
 ENABLE_GEO_LOOKUP=true
 WHITELIST_IPS="192.168.1.100,10.0.0.50"
-Редактировать:
+Редакт��ровать:
 
 bash
 sudo nano /etc/security-notify/config.conf
@@ -124,7 +124,7 @@ Code
 Fail2Ban Alert
 Code
 🚨 FAIL2BAN ALERT 🚨
-━━━━━━━��━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━
 🔐 Jail: SSH
 🌐 IP: 103.45.67.89
 📍 Location: Mumbai, India
@@ -144,7 +144,7 @@ systemd
 bash
 which telegram-notify
 # Если не найдена, переустановите:
-curl -fsSL https://raw.githubusercontent.com/pogosste/security-notify-system/main/quick-install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/pogosste/telegram-notify/main/quick-install.sh | sudo bash
 Уведомления не приходят
 bash
 telegram-notify status    # Проверить конфигурацию
@@ -156,8 +156,6 @@ sudo systemctl status fail2ban
 sudo fail2ban-client status sshd
 sudo journalctl -u fail2ban -n 50
 📝 Документация
-Руководство по установке
-Конфигурация
 Changelog
 🤝 Вклад в проект
 Contributions are welcome!
@@ -174,11 +172,10 @@ MIT License - см. файл LICENSE
 pogosste
 
 GitHub: @pogosste
-Telegram: @pogosste
 ⭐ Поддержка проекта
 Если проект оказался полезным, поставьте звезду ⭐ на GitHub!
 
 📈 Статистика
-![GitHub stars](https://img.shields.io/github/stars/pogosste/security-notify-system?style=social) ![GitHub forks](https://img.shields.io/github/forks/pogosste/security-notify-system?style=social) ![GitHub issues](https://img.shields.io/github/issues/pogosste/security-notify-system)
+![GitHub stars](https://img.shields.io/github/stars/pogosste/telegram-notify?style=social) ![GitHub forks](https://img.shields.io/github/forks/pogosste/telegram-notify?style=social) ![GitHub issues](https://img.shields.io/github/issues/pogosste/telegram-notify)
 
 Made with ❤️ for VPS security
