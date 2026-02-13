@@ -1,0 +1,26 @@
+# Конфигурационные файлы с секретами
+config.conf
+*.conf.backup
+*.bak
+
+# Логи
+*.log
+
+# Временные файлы
+*.tmp
+*.lock
+/tmp/
+
+# Бэкапы
+*-backup-*/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
