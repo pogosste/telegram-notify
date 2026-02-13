@@ -503,7 +503,7 @@ EOFJAIL
                 
                 # Update port and action in [sshd] section only
                 awk -v port="$SSH_PORT" -v needs_telegram="$NEEDS_TELEGRAM_NOTIFY" '
-                BEGIN { in_sshd=0 }
+                BEGIN { in_sshd=0; action_found=0 }
                 /^\[sshd\]/ { in_sshd=1 }
                 /^\[/ && !/^\[sshd\]/ { in_sshd=0 }
                 in_sshd && /^port[[:space:]]*=/ { print "port = " port; next }
@@ -512,26 +512,10 @@ EOFJAIL
                     gsub(/port=ssh/, "port=" port)
                     gsub(/port=[0-9]+/, "port=" port)
                     print
-                    # Add telegram-notify if needed
-                    if (needs_telegram == "1") {
-                        # Check if next line exists
-                        ret = getline nextline
-                        if (ret == 1) {
-                            # Successfully read next line
-                            if (nextline !~ /telegram-notify/) {
-                                print "         telegram-notify[name=SSH]"
-                            }
-                            print nextline
-                        } else {
-                            # EOF or error - add telegram-notify
-                            print "         telegram-notify[name=SSH]"
-                        }
-                    } else {
-                        # Skip to next line if it exists
-                        ret = getline nextline
-                        if (ret == 1) {
-                            print nextline
-                        }
+                    # Add telegram-notify after action if needed and not yet added
+                    if (needs_telegram == "1" && action_found == 0) {
+                        print "         telegram-notify[name=SSH]"
+                        action_found = 1
                     }
                     next
                 }
